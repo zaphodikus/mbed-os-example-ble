@@ -21,6 +21,9 @@ inline void print_error(ble_error_t error, const char* msg)
 {
     printf("%s: ", msg);
     switch(error) {
+        case BLE_ERROR_NOT_FOUND:
+            printf("BLE_ERROR_NOT_FOUND: Not found this err?");
+            break;
         case BLE_ERROR_NONE:
             printf("BLE_ERROR_NONE: No error");
             break;

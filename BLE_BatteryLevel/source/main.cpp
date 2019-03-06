@@ -34,7 +34,7 @@ public:
         _event_queue(event_queue),
         _battery_uuid(GattService::UUID_BATTERY_SERVICE),
         _battery_level(50),
-        _battery_service(ble, _battery_level),
+        _battery_service(ble, _battery_level) ,
         _adv_data_builder(_adv_buffer) { }
 
     void start() {
@@ -68,10 +68,20 @@ private:
             ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
+        uint8_t backing_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+        mbed::Span<uint8_t> build_buffer(backing_buffer);
+        ble::AdvertisingDataBuilder adv_data_builder(build_buffer);
 
-        _adv_data_builder.setFlags();
-        _adv_data_builder.setLocalServiceList(mbed::make_Span(&_battery_uuid, 1));
-        _adv_data_builder.setName(DEVICE_NAME);
+        adv_data_builder.setFlags();
+        adv_data_builder.setLocalServiceList(mbed::make_Span(&_battery_uuid, 1));
+        adv_data_builder.setName(DEVICE_NAME);
+        // make a copy on heap
+        uint8_t* ptr = (uint8_t*)malloc(adv_data_builder.getAdvertisingData().size());
+        if (NULL == ptr){
+            print_error( BLE_ERROR_NO_MEM, "Malloc adv buffer failed");
+            return;
+        }
+        
 
         /* Setup advertising */
 
@@ -87,7 +97,8 @@ private:
 
         error = _ble.gap().setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
-            _adv_data_builder.getAdvertisingData()
+            //_adv_data_builder.getAdvertisingData()
+            make_const_Span<uint8_t>(ptr, adv_data_builder.getAdvertisingData().size())
         );
 
         if (error) {
@@ -136,7 +147,8 @@ private:
     uint8_t _battery_level;
     BatteryService _battery_service;
 
-    uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+    //uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+    mbed::Span<uint8_t> _adv_buffer;
     ble::AdvertisingDataBuilder _adv_data_builder;
 };
 
